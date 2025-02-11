@@ -15,10 +15,10 @@ class FPQuantizer(nn.Module):
         self.max_norm = torch.tensor(max_norm)
         self.min_norm = torch.tensor(min_norm)
         self.str_fmt = str(fmt)
-        self.is_enable()
+        self.enable()
 
     def forward(self, x):
-        if self.enable:
+        if self.is_enable:
             return self.quantize(x)
         return x
     
@@ -34,7 +34,7 @@ class FPQuantizer(nn.Module):
             bias = 2 ** self.ebits - torch.log2(self.max_norm) + torch.log2(2 - 2 ** (-self.mbits)) - 2
         elif 'fp4' in self.str_fmt:
             bias = 2 ** self.ebits - torch.log2(self.max_norm) + torch.log2(2 - 2 ** (-self.mbits)) - 1
-        print(bias)
+
         # Ensure no values are greater than the maximum value represented by an 8 bit float system
         # with M mantissa and E exponent bits. torch.min/torch.max are used to allow gradients to
         # flow to maxval
@@ -55,15 +55,15 @@ class FPQuantizer(nn.Module):
         # Using the per-element scale we can quantize the clipped input tensor to the FP grid
         return torch.round(x_clipped / scales) * scales
 
-    def is_enable(self):
-        self.enable = True
+    def enable(self):
+        self.is_enable = True
     
-    def is_disable(self):
-        self.enable = False
+    def disable(self):
+        self.is_enable = False
 
     def extra_repr(self):
         s = f"Format: {self.str_fmt.split('.')[-1].upper()}, "
-        s += f"Max normal: {self.max_norm}, Min normal: {self.min_norm}"
+        s += f"Max: {self.max_norm}, Min: {self.min_norm}"
         return s
 
 

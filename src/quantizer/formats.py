@@ -66,17 +66,17 @@ def _get_format_params(fmt):
             min_norm = 2 ** emin
         
         case ElemFormat.int8:
-            ebits, mbits = None, None
+            ebits, mbits = 8, None
             emax = None
             emin = None
-            max_norm = (2 ** 7) - 1
+            max_norm = 2 ** (ebits - 1)
             min_norm = None
 
         case ElemFormat.int4:
-            ebits, mbits = None, None
+            ebits, mbits = 4, None
             emax = None
             emin = None
-            max_norm = (2 ** 3) - 1
+            max_norm = 2 ** (ebits - 1)
             min_norm = None
 
         case ElemFormat.mxfp8_e4m3:
@@ -107,4 +107,3 @@ def _get_format_params(fmt):
 if __name__ == "__main__":
     y = _get_format_params(ElemFormat.fp8_e4m3)
     print(y)
-        

@@ -8,6 +8,10 @@ class FPQuantizer(nn.Module):
     
     def __init__(self, fmt: ElemFormat, *args, **kwargs):
         super().__init__(*args, **kwargs)
+
+        assert fmt in (ElemFormat.fp8_e4m3, ElemFormat.fp8_e5m2, ElemFormat.fp4), \
+            f"Not support Format for {self.__class__.__name__}"
+        
         ebits, mbits, emax, max_norm, min_norm = _get_format_params(fmt)
         self.ebits = torch.tensor(ebits)
         self.mbits = torch.tensor(mbits)
@@ -17,14 +21,13 @@ class FPQuantizer(nn.Module):
         self.str_fmt = str(fmt)
         self.enable()
 
-    def forward(self, x):
+    def forward(self, x_float):
         if self.is_enable:
-            return self.quantize(x)
-        return x
+            return self.quantize(x_float)
+        return x_float
     
     def quantize(self, x_float):
         # This is refered to https://github.com/quic/aimet/blob/develop/TrainingExtensions/torch/src/python/aimet_torch/fp_quantization.py#L172
-
         # Math explanation of what happens here:
         # Bias is computed from maxval: $B=2^E - \log_2(M) + \log_2(2 - 2^{-M}) - 1$
         # This follows from maxval $M=(2 - 2^{-M}) \cdot 2^{2^E-1-B}$.

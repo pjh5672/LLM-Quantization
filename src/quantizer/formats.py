@@ -11,6 +11,8 @@ class ElemFormat(Enum):
     mxfp8_e4m3 = 6
     mxfp8_e5m2 = 7
     mxfp4 = 8
+    mxint8 = 9
+    mxint4 = 10
 
     @staticmethod
     def from_str(s):
@@ -80,25 +82,39 @@ def _get_format_params(fmt):
             min_norm = None
 
         case ElemFormat.mxfp8_e4m3:
-            ebits, mbits = 4, 3
-            emax = 2 ** (ebits - 1)
+            ebits, mbits = 4, 5
+            emax = 2**(ebits - 1)
             emin = 2 - (2 ** (ebits - 1))
-            max_norm = 2 ** emax * (2 - 2 ** (1-mbits))
+            max_norm = 2**emax * 1.75
             min_norm = 2 ** emin
 
         case ElemFormat.mxfp8_e5m2:
-            ebits, mbits = 5, 2
+            ebits, mbits = 5, 4
             emax = 2 ** (ebits - 1) - 1
             emin = 2 - (2 ** (ebits - 1))
-            max_norm = 2 ** emax * (2 - 2 ** (-mbits))
+            max_norm = 2**emax * float(2**(mbits-1) - 1) / 2**(mbits-2)
             min_norm = 2 ** emin
         
         case ElemFormat.mxfp4:
-            ebits, mbits = 2, 1
+            ebits, mbits = 2, 3
             emax = 2 ** (ebits - 1)
             emin = 2 - (2 ** (ebits - 1))
-            max_norm = 2 ** emax * (2 - 2 ** (-mbits))
+            max_norm = 2**emax * float(2**(mbits-1) - 1) / 2**(mbits-2)
             min_norm = 2 ** emin
+        
+        case ElemFormat.mxint8:
+            ebits, mbits = 0, 8
+            emax = 0
+            emin = 2 - (2 ** (ebits - 1))
+            max_norm = 2**emax * float(2**(mbits-1) - 1) / 2**(mbits-2)
+            min_norm = 0
+        
+        case ElemFormat.mxint4:
+            ebits, mbits = 0, 4
+            emax = 0
+            emin = 2 - (2 ** (ebits - 1))
+            max_norm = 2**emax * float(2**(mbits-1) - 1) / 2**(mbits-2)
+            min_norm = 0
 
     _FORMAT_CACHE[fmt] = (ebits, mbits, emax, max_norm, min_norm)
     return ebits, mbits, emax, max_norm, min_norm

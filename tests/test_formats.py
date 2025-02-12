@@ -30,11 +30,11 @@ def test_fp4():
 
 def test_int8():
     *_, max_norm, _ = _get_format_params(ElemFormat.int8)
-    assert max_norm == 127
+    assert max_norm == 128
 
 def test_int4():
     *_, max_norm, _ = _get_format_params(ElemFormat.int4)
-    assert max_norm == 7
+    assert max_norm == 8
 
 def test_mxfp8_e4m3():
     *_, emax, max_norm, min_norm = _get_format_params(ElemFormat.mxfp8_e4m3)

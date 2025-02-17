@@ -25,7 +25,7 @@ class FPQuantizer(nn.Module):
         if self.is_enable:
             return self.quantize(x_float)
         return x_float
-    
+
     def quantize(self, x_float):
         # This is refered to https://github.com/quic/aimet/blob/develop/TrainingExtensions/torch/src/python/aimet_torch/fp_quantization.py#L172
         # Math explanation of what happens here:
@@ -51,7 +51,7 @@ class FPQuantizer(nn.Module):
 
         # This ensures scales are never smaller than the subnormal scale
         log_scales = torch.clamp(log_scales, 1.)
-            
+
         # Second step of computing scale $s$
         scales = 2. ** (log_scales - self.mbits - bias)
 

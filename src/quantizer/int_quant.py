@@ -2,6 +2,7 @@ import torch
 from torch import nn
 
 from formats import ElemFormat, _get_format_params
+from utils import _reshape_to_blocks, _undo_reshape_to_blocks
 
 
 class INTQuantizer(nn.Module):
@@ -26,40 +27,37 @@ class INTQuantizer(nn.Module):
     def forward(self, x_float, scales=None, zeros=None):
         if self.is_enable:
             # Refer to https://github.com/mit-han-lab/llm-awq/blob/main/awq/quantize/quantizer.py
-            org_shape = x_float.shape
             if self.group_size > 0:
-                assert org_shape[-1] % self.group_size == 0
-                x_float = x_float.reshape(org_shape[0], org_shape[1] // self.group_size, self.group_size)
-
-            assert torch.isnan(x_float).sum() == 0
+                x_float, axes, org_shape, padded_shape = _reshape_to_blocks(x_float, axes=[-1], block_size=self.group_size)
             
             if self.asymmetric:
-                max_int = self.max_norm
+                max_int = (self.max_norm * 2) - 1 
                 min_int = 0
             else:
                 max_int = self.max_norm - 1
                 min_int = -self.max_norm
 
             if (scales is not None) & (zeros is not None):
-                quantized = self.quantize(x_float, scales=scales, zeros=zeros,
+                x_dq = self.quantize(x_float, scales=scales, zeros=zeros,
                                           min_int=min_int, max_int=max_int)
             else:
                 scales, zeros = self.find_params(x_float, already_reshaped=True)
-                quantized = self.quantize(x_float, scales=scales, zeros=zeros,
+                x_dq = self.quantize(x_float, scales=scales, zeros=zeros,
                                           min_int=min_int, max_int=max_int)
-            return quantized.reshape(org_shape)
+            if self.group_size > 0:
+                return _undo_reshape_to_blocks(x_dq, padded_shape, org_shape, axes=axes)
+            return x_dq
         return x_float
 
     def find_params(self, x_float, already_reshaped=False):
-        org_shape = x_float.shape
         if (self.group_size > 0) & (not already_reshaped):
-            assert org_shape[-1] % self.group_size == 0
-            x_float = x_float.reshape(org_shape[0], org_shape[1] // self.group_size, self.group_size)
-        
+            x_float, axes, org_shape, padded_shape = _reshape_to_blocks(x_float, 
+                                                                         axes=[-1], 
+                                                                         block_size=self.group_size)
         if self.asymmetric:
             max_val = x_float.amax(dim=-1, keepdim=True)
             min_val = x_float.amin(dim=-1, keepdim=True)
-            max_int = self.max_norm
+            max_int = (self.max_norm * 2) - 1 
             min_int = 0
             scales = (max_val - min_val).clamp(min=1e-5) / max_int
             zeros = (-torch.round(min_val / scales)).clamp_(min_int, max_int)
@@ -96,9 +94,9 @@ class INTQuantizer(nn.Module):
 if __name__ == "__main__":
     torch.manual_seed(0)
 
-    x = torch.randn(6, 8)
+    x = torch.randn(6, 7)
     print(x)
-    quantizer = INTQuantizer(fmt=ElemFormat.int8, asymmetric=True)
+    quantizer = INTQuantizer(fmt=ElemFormat.int8, asymmetric=True, group_size=-1)
     # quantizer = INTQuantizer(fmt=ElemFormat.int4)
     print(quantizer)
     x_q = quantizer(x)

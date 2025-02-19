@@ -14,7 +14,7 @@ from third_party.microxcaling.mx.mx_ops import _quantize_mx
 
 class MXQuantizer(nn.Module):
 
-    def __init__(self, fmt: ElemFormat, *args, **kwargs):
+    def __init__(self, fmt: ElemFormat, device=torch.device('cpu'), *args, **kwargs):
         super().__init__(*args, **kwargs)
 
         assert fmt in (ElemFormat.mxfp8_e4m3, ElemFormat.mxfp8_e5m2, 
@@ -62,9 +62,10 @@ class MXQuantizer(nn.Module):
 if __name__ == "__main__":
     torch.manual_seed(0)
 
-    x = torch.randn(6, 8)
+    device = torch.device('cuda')
+    x = torch.randn(6, 8).to(device=device)
     print(x)
-    quantizer = MXQuantizer(fmt=ElemFormat.mxfp8_e5m2)
+    quantizer = MXQuantizer(fmt=ElemFormat.mxfp8_e5m2, device=device)
     print(quantizer)
     x_q = quantizer(x)
     print(x_q)

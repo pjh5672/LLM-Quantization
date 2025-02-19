@@ -6,12 +6,12 @@ from formats import ElemFormat, _get_format_params
 
 class FPQuantizer(nn.Module):
     
-    def __init__(self, fmt: ElemFormat, *args, **kwargs):
+    def __init__(self, fmt: ElemFormat, device=torch.device('cpu'), *args, **kwargs):
         super().__init__(*args, **kwargs)
 
         assert fmt in (ElemFormat.fp8_e4m3, ElemFormat.fp8_e5m2, ElemFormat.fp4), \
             f"Not support Format for {self.__class__.__name__}"
-        
+
         ebits, mbits, emax, max_norm, min_norm = _get_format_params(fmt)
         self.ebits = torch.tensor(ebits)
         self.mbits = torch.tensor(mbits)
@@ -19,6 +19,7 @@ class FPQuantizer(nn.Module):
         self.max_norm = torch.tensor(max_norm)
         self.min_norm = torch.tensor(min_norm)
         self.str_fmt = str(fmt)
+        self.max_norm = self.max_norm.to(device=device)
         self.enable()
 
     def forward(self, x_float):
@@ -73,9 +74,10 @@ class FPQuantizer(nn.Module):
 if __name__ == "__main__":
     torch.manual_seed(0)
 
-    x = torch.randn(6, 8)
+    device = torch.device('cuda')
+    x = torch.randn(6, 8).to(device=device)
     print(x)
-    quantizer = FPQuantizer(fmt=ElemFormat.fp8_e4m3)
+    quantizer = FPQuantizer(fmt=ElemFormat.fp8_e4m3, device=device)
     # quantizer = FPQuantizer(fmt=ElemFormat.fp8_e5m2)
     # quantizer = FPQuantizer(fmt=ElemFormat.fp4)
     print(quantizer)

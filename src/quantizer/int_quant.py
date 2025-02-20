@@ -17,10 +17,10 @@ class INTQuantizer(nn.Module):
         ebits, *_, max_norm, _ = _get_format_params(fmt)
         self.ebits = torch.tensor(ebits)
         self.max_norm = torch.tensor(max_norm)
-        self.str_fmt = str(fmt)
         self.max_norm = self.max_norm.to(device=device)
-        self.enable()
         self.configure(asymmetric=asymmetric, group_size=group_size)
+        self.enable()
+        self.str_fmt = str(fmt)
 
     def configure(self, asymmetric=True, group_size=-1):
         self.asymmetric = asymmetric
@@ -100,8 +100,7 @@ if __name__ == "__main__":
     x_q = quantizer(x)
     print(x_q)
 
-    quantizer.configure(asymmetric=False, group_size=8)
-    print(quantizer)
-    scales, zeros = quantizer.find_params(x)
-    x_q = quantizer(x, scales=scales, zeros=zeros)
-    print(x_q)
+    # print(quantizer)
+    # scales, zeros = quantizer.find_params(x)
+    # x_q = quantizer(x, scales=scales, zeros=zeros)
+    # print(x_q)

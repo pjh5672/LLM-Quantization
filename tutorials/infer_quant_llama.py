@@ -150,7 +150,7 @@ class Llama:
             # Only replace the token if it is a padding token
             next_token = torch.where(prompt_tokens_mask[:, cur_pos], tokens[:, cur_pos], next_token)
             tokens[:, cur_pos] = next_token
-                
+
             # EOS is reached only if we find the EOS token
             eos_reached |= (~prompt_tokens_mask[:, cur_pos]) & (next_token == self.tokenizer.eos_id())
     

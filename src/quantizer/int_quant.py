@@ -68,6 +68,8 @@ class INTQuantizer(nn.Module):
         assert torch.isnan(scales).sum() == 0
         assert torch.isnan(x_float).sum() == 0
 
+        scales = scales.to(torch.bfloat16)
+        zeros = zeros.to(torch.bfloat16)
         return scales, zeros
 
     def quantize(self, x_float, scales, zeros):
@@ -95,7 +97,8 @@ if __name__ == "__main__":
     print(x)
     quantizer = INTQuantizer(fmt=ElemFormat.int8, asymmetric=True, 
                              group_size=-1, device=device)
-    # quantizer = INTQuantizer(fmt=ElemFormat.int4)
+    # quantizer = INTQuantizer(fmt=ElemFormat.int4, asymmetric=True, 
+    #                          group_size=-1, device=device)
     print(quantizer)
     x_q = quantizer(x)
     print(x_q)

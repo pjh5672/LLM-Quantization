@@ -1,6 +1,10 @@
 from enum import Enum
 
 
+FP32_EXPONENT_BIAS = 127
+FP32_MIN_NORMAL = 2 ** (-FP32_EXPONENT_BIAS + 1)
+
+
 # Enum for scalar data formats which is similar to microxcaling lib's for compatibility.
 class ElemFormat(Enum):
     fp8_e4m3 = 1

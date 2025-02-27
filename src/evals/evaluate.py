@@ -55,4 +55,4 @@ if __name__ == "__main__":
     for name in ["wikitext2", "ptb", "c4"]:
         _, testenc = get_loaders(name, model=model_path)
         ppl = evaluator.compute_ppl(testenc)
-        print(f"PPL(dataset: {name}): {ppl:.4f}")
+        print(f"PPL(dataset:{name}): {ppl:.4f}")

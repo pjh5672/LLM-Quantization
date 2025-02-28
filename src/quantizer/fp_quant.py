@@ -6,7 +6,7 @@ from formats import ElemFormat, _get_format_params
 
 class FPQuantizer(nn.Module):
     
-    def __init__(self, fmt: ElemFormat, flex_bias=True, device=torch.device('cpu'), *args, **kwargs):
+    def __init__(self, fmt: ElemFormat, per_channel=True, flex_bias=True, device=torch.device('cpu'), *args, **kwargs):
         super().__init__(*args, **kwargs)
 
         assert fmt in (ElemFormat.fp8_e4m3, ElemFormat.fp8_e5m2, ElemFormat.fp4), \
@@ -20,6 +20,7 @@ class FPQuantizer(nn.Module):
         self.min_norm = torch.tensor(min_norm)
         self.str_fmt = str(fmt)
         self.max_norm = self.max_norm.to(device=device)
+        self.per_channel = per_channel
         self.flex_bias = flex_bias
         self.enable()
 
@@ -30,21 +31,24 @@ class FPQuantizer(nn.Module):
         return x_float
 
     def set_bias(self, x_float):
-        self.maxval, _ = torch.max(torch.abs(x_float), dim=-1, keepdim=True)
-    
+        if self.per_channel:
+            self.maxval, _ = torch.max(torch.abs(x_float), dim=-1, keepdim=True)
+        else:
+            self.maxval = torch.max(torch.abs(x_float))
+
         if 'fp8_e4m3' in self.str_fmt:
             if self.flex_bias:
-                bias = 2 ** self.ebits - torch.log2(self.max_norm) + torch.log2(2 - 2 ** (1-self.mbits)) - 1
+                bias = 2 ** self.ebits - torch.log2(self.maxval) + torch.log2(2 - 2 ** (1-self.mbits)) - 1
             else:
                 bias = torch.tensor([7]).to(x_float.device)
         elif 'fp8_e5m2' in self.str_fmt:
             if self.flex_bias:
-                bias = 2 ** self.ebits - torch.log2(self.max_norm) + torch.log2(2 - 2 ** (-self.mbits)) - 2
+                bias = 2 ** self.ebits - torch.log2(self.maxval) + torch.log2(2 - 2 ** (-self.mbits)) - 2
             else:
                 bias = torch.tensor([15]).to(x_float.device)
         elif 'fp4' in self.str_fmt:
             if self.flex_bias:
-                bias = 2 ** self.ebits - torch.log2(self.max_norm) + torch.log2(2 - 2 ** (-self.mbits)) - 1
+                bias = 2 ** self.ebits - torch.log2(self.maxval) + torch.log2(2 - 2 ** (-self.mbits)) - 1
             else:
                 bias = torch.tensor([1]).to(x_float.device)
 
@@ -56,6 +60,7 @@ class FPQuantizer(nn.Module):
         # Bias is computed from maxval: $B=2^E - \log_2(M) + \log_2(2 - 2^{-M}) - 1$
         # This follows from maxval $M=(2 - 2^{-M}) \cdot 2^{2^E-1-B}$.
         bias = self.set_bias(x_float)
+
         # Ensure no values are greater than the maximum value represented by an 8 bit float system
         # with M mantissa and E exponent bits. torch.min/torch.max are used to allow gradients to
         # flow to maxval
@@ -72,7 +77,8 @@ class FPQuantizer(nn.Module):
 
         # Second step of computing scale $s$
         scales = 2.0 ** (log_scales - self.mbits - bias)
-
+        
+        scales = scales.to(torch.float16)
         # Using the per-element scale we can quantize the clipped input tensor to the FP grid
         return torch.round(x_clipped / scales) * scales
 
@@ -92,26 +98,16 @@ if __name__ == "__main__":
     torch.manual_seed(0)
 
     device = torch.device('cuda')
-    # x = torch.randn(4, 6)
-    # x = x.to(device=device)
-    # print(x)
+    x = torch.randn(4, 6)
+    x = x.to(device=device)
+    print(x)
     # quantizer = FPQuantizer(fmt=ElemFormat.fp8_e4m3, flex_bias=True, device=device)
     # quantizer = FPQuantizer(fmt=ElemFormat.fp8_e5m2, flex_bias=True, device=device)
-    # quantizer = FPQuantizer(fmt=ElemFormat.fp4, flex_bias=True, device=device)
-
-    # print(quantizer)
-    # x_dq = quantizer(x)
-    # print(x_dq)
-    # print(((x-x_dq)**2).mean())
-
-    mbits = 1
-    e_grid = 2 ** torch.tensor([0, 1, 2])
-    m_grid = 1 + torch.linspace(0, (2**mbits)-1, 2**mbits) / (2**mbits)
-    x = torch.outer(e_grid, m_grid).reshape(-1, 1)
-    print(x)
-    # quantizer = FPQuantizer(fmt=ElemFormat.fp8_e4m3, flex_bias=False)
-    # quantizer = FPQuantizer(fmt=ElemFormat.fp8_e5m2, flex_bias=False)
-    quantizer = FPQuantizer(fmt=ElemFormat.fp4, flex_bias=False)
+    quantizer = FPQuantizer(fmt=ElemFormat.fp4, flex_bias=True, device=device)
+    # quantizer = FPQuantizer(fmt=ElemFormat.fp4, flex_bias=False, device=device)
+    # quantizer = FPQuantizer(fmt=ElemFormat.fp4, per_channel=True, device=device)
+    # quantizer = FPQuantizer(fmt=ElemFormat.fp4, per_channel=False, device=device)
+    print(quantizer)
     x_dq = quantizer(x)
     print(x_dq)
     print(((x-x_dq)**2).mean())

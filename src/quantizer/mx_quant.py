@@ -8,7 +8,7 @@ if str(ROOT) not in sys.path:
 import torch
 from torch import nn
 
-from formats import ElemFormat, _get_format_params, FP32_MIN_NORMAL
+from formats import ElemFormat, _get_format_params
 from third_party.microxcaling.mx.mx_ops import _quantize_mx
 
 
@@ -38,50 +38,6 @@ class MXQuantizer(nn.Module):
             return self.quantize(x_float)
         return x_float
     
-    def find_scale(self, x_float):
-        max_val, _ = torch.max(torch.abs(x_float), dim=-1, keepdim=True)
-        scales = max_val / self.max_norm
-        return scales.to(torch.bfloat16)
-
-    def _shared_exponents_mentissa(self, A, method="max", axes=None, mbits=None):
-        """
-        Get shared exponents for the passed matrix A with mantissa.
-        Args:
-        A      {PyTorch tensor} -- Input tensor
-        method {str}            -- Exponent selection method.
-                                    "max" uses the max absolute value
-                                    "none" uses an exponent for each value (i.e., no sharing)
-        axes   {list(int)}      -- List of integers which specifies the axes across which
-                                    shared exponents are calculated.
-        Returns:
-        shared_exp {PyTorch tensor} -- Tensor of shared exponents
-        """
-
-        if method == "max":
-            if axes is None:
-                x_max = torch.max(torch.abs(A))
-            else:
-                x_max = A
-                for axis in axes:
-                    x_max, _ = torch.max(torch.abs(x_max), dim=axis, keepdim=True)
-        elif method == "none":
-            x_max = torch.abs(A)
-        else:
-            raise Exception("Unrecognized shared exponent selection method %s" % (method))
-
-        # log2(shared_exp) and truncate to integer
-        shared_exp = torch.floor(
-            torch.log2(
-                x_max + FP32_MIN_NORMAL * (x_max == 0).type(x_max.dtype)
-            )
-        )
-        if mbits is not None:
-            shared_expm = _safe_lshift(x_max, bits=mbits, exp=shared_exp)
-            shared_expm = _round_mantissa(shared_expm, bits=mbits, round='nearest')
-            shared_expm = _safe_rshift(shared_expm, bits=mbits, exp=shared_exp)
-            return torch.log2(shared_expm)
-        return shared_exp
-
     def quantize(self, x_float):
         quantized = _quantize_mx(A=x_float, 
                                 scale_bits=self.scale_bits,
@@ -109,8 +65,8 @@ if __name__ == "__main__":
     device = torch.device('cuda')
     x = torch.randn(4, 8).to(device=device)
     print(x)
-    # quantizer = MXQuantizer(fmt=ElemFormat.mxfp4, device=device)
-    quantizer = MXQuantizer(fmt=ElemFormat.mxfp8_e5m2, device=device)
+    quantizer = MXQuantizer(fmt=ElemFormat.mxfp4, device=device)
+    # quantizer = MXQuantizer(fmt=ElemFormat.mxfp8_e5m2, device=device)
     print(quantizer)
     x_dq = quantizer(x)
     print(x_dq)

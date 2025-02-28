@@ -23,12 +23,14 @@ class INTQuantizer(nn.Module):
         self.str_fmt = str(fmt)
 
     def configure(self, asymmetric=True, group_size=-1):
+        assert (group_size != 1) or not asymmetric, \
+            "Asymmetric quant with per-element(G1) are both exclusive."
         self.asymmetric = asymmetric
         self.group_size = group_size
 
         if self.asymmetric:
             self.max_int = (self.max_norm * 2) - 1 
-            self.min_int = 0
+            self.min_int = torch.tensor([0])
         else:
             self.max_int = self.max_norm - 1
             self.min_int = -self.max_norm
@@ -51,6 +53,9 @@ class INTQuantizer(nn.Module):
         return x_float
 
     def find_params(self, x_float, already_reshaped=False):
+        self.min_int = self.min_int.to(x_float.device)
+        self.max_int = self.max_int.to(x_float.device)
+
         if (self.group_size > 0) & (not already_reshaped):
             x_float, *_ = _reshape_to_blocks(x_float, axes=[-1], block_size=self.group_size)
 
@@ -63,13 +68,13 @@ class INTQuantizer(nn.Module):
             max_val = x_float.abs().amax(dim=-1, keepdim=True)
             max_val = max_val.clamp(min=1e-5)
             scales = max_val / self.max_int
-            zeros = 0
+            zeros = torch.tensor([0]).to(x_float.device)
 
         assert torch.isnan(scales).sum() == 0
         assert torch.isnan(x_float).sum() == 0
 
-        scales = scales.to(torch.bfloat16)
-        zeros = zeros.to(torch.bfloat16)
+        scales = scales.to(torch.float16)
+        zeros = zeros.to(torch.float16)
         return scales, zeros
 
     def quantize(self, x_float, scales, zeros):
@@ -93,17 +98,16 @@ if __name__ == "__main__":
     torch.manual_seed(0)
 
     device = torch.device('cuda')
-    x = torch.randn(6, 7).to(device=device)
-    print(x)
-    quantizer = INTQuantizer(fmt=ElemFormat.int8, asymmetric=True, 
-                             group_size=-1, device=device)
+    x = torch.randn(4, 8).to(device=device)
+    # print(x)
+    # quantizer = INTQuantizer(fmt=ElemFormat.int8, asymmetric=True, 
+    #                          group_size=-1, device=device)
     # quantizer = INTQuantizer(fmt=ElemFormat.int4, asymmetric=True, 
     #                          group_size=-1, device=device)
+    quantizer = INTQuantizer(fmt=ElemFormat.int4, asymmetric=True, 
+                             group_size=128, device=device)
     print(quantizer)
-    x_q = quantizer(x)
-    print(x_q)
-
-    # print(quantizer)
-    # scales, zeros = quantizer.find_params(x)
-    # x_q = quantizer(x, scales=scales, zeros=zeros)
-    # print(x_q)
+    x_dq = quantizer(x)
+    print(x_dq)
+    print(((x-x_dq)**2).mean())
+    

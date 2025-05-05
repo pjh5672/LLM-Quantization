@@ -10,7 +10,7 @@ python llama.py --columns-per-group 256 \
                 --codebook-bitwidth 8 \
                 --quantize-per-codebook \
                 --vq-scaling-blocksize 64 \
-                --output-dir ../../models/opt-125M-vq
+                --output-dir ../../models/opt-125M-vq \
                 ../../models/opt-125M wikitext2
 
 python llama.py --columns-per-group 256 \
@@ -26,7 +26,7 @@ python llama.py --columns-per-group 256 \
                 --quantize-per-codebook \
                 --vq-scaling-blocksize 64 \
                 --zero-aware \
-                --output-dir ../../models/opt-125M-pr50-spp-vq
+                --output-dir ../../models/opt-125M-pr50-spp-vq \
                 ../../models/opt-125M-pr50-spp wikitext2
 
 python llama.py --columns-per-group 256 \
@@ -42,7 +42,7 @@ python llama.py --columns-per-group 256 \
                 --quantize-per-codebook \
                 --vq-scaling-blocksize 64 \
                 --zero-aware \
-                --output-dir ../../models/opt-125M-pr50-spp-vq2
+                --output-dir ../../models/opt-125M-pr50-spp-vq2 \
                 ../../models/opt-125M-pr50-spp wikitext2
 
 python llama.py --columns-per-group 256 \
@@ -58,7 +58,7 @@ python llama.py --columns-per-group 256 \
                 --quantize-per-codebook \
                 --vq-scaling-blocksize 64 \
                 --zero-aware \
-                --output-dir ../../models/opt-125M-pr50-spp-merged-vq
+                --output-dir ../../models/opt-125M-pr50-spp-merged-vq \
                 ../../models/opt-125M-pr50-spp-merged wikitext2
 
 python llama.py --columns-per-group 256 \
@@ -74,5 +74,5 @@ python llama.py --columns-per-group 256 \
                 --quantize-per-codebook \
                 --vq-scaling-blocksize 64 \
                 --zero-aware \
-                --output-dir ../../models/opt-125M-pr50-spp-merged-vq2
+                --output-dir ../../models/opt-125M-pr50-spp-merged-vq2 \
                 ../../models/opt-125M-pr50-spp-merged wikitext2

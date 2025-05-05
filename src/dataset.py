@@ -14,10 +14,10 @@ def set_seed(seed):
 
 def get_wikitext2(nsamples, seed, seqlen, model):
     traindata = load_dataset("arrow",
-                            data_files="./datasets/wikitext2_raw_v1/wikitext-train.arrow", 
+                            data_files="../datasets/wikitext2_raw_v1/wikitext-train.arrow", 
                             split="train")
     testdata = load_dataset("arrow", 
-                            data_files="./datasets/wikitext2_raw_v1/wikitext-test.arrow",
+                            data_files="../datasets/wikitext2_raw_v1/wikitext-test.arrow",
                             split="train")
     
     tokenizer = AutoTokenizer.from_pretrained(model, use_fast=False)
@@ -38,10 +38,10 @@ def get_wikitext2(nsamples, seed, seqlen, model):
 
 def get_ptb(nsamples, seed, seqlen, model):
     traindata = load_dataset("arrow", 
-                            data_files="./datasets/penn_treebank/ptb_text_only-train.arrow", 
+                            data_files="../datasets/penn_treebank/ptb_text_only-train.arrow", 
                             split="train")
     testdata = load_dataset("arrow", 
-                            data_files="./datasets/penn_treebank/ptb_text_only-test.arrow", 
+                            data_files="../datasets/penn_treebank/ptb_text_only-test.arrow", 
                             split="train")
 
     tokenizer = AutoTokenizer.from_pretrained(model, use_fast=False)
@@ -62,10 +62,10 @@ def get_ptb(nsamples, seed, seqlen, model):
 
 def get_c4(nsamples, seed, seqlen, model):
     traindata = load_dataset("arrow", 
-                            data_files="./datasets/allenai_c4/c4-train-0000*-of-00002.arrow", 
+                            data_files="../datasets/allenai_c4/c4-train-0000*-of-00002.arrow", 
                             split="train")
     valdata = load_dataset("arrow", 
-                            data_files="./datasets/allenai_c4/c4-validation.arrow", 
+                            data_files="../datasets/allenai_c4/c4-validation.arrow", 
                             split="train")
 
     tokenizer = AutoTokenizer.from_pretrained(model, use_fast=False)
@@ -107,4 +107,4 @@ def get_loaders(name, nsamples=128, seed=0, seqlen=2048, model=''):
 
 if __name__ == "__main__":
     for dataset in ["wikitext2", "ptb", "c4"]:
-        get_loaders(dataset, model='./models/llama-3.2-1B')
+        get_loaders(dataset, model='../models/llama-3.2-1B')

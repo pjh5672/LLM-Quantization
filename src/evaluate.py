@@ -23,7 +23,7 @@ def eval_zero_shot(model_path, task_list, num_fewshot=0):
     
     tm = TaskManager()
     task_names = pattern_match(task_list, tm.all_tasks)
-    limit = 100
+    limit = 300
     batch_size = 8
     results = evaluator.simple_evaluate(
         model=models.huggingface.HFLM(pretrained=model_path, trust_remote_code=False),
@@ -46,7 +46,7 @@ def main(model_path, device):
     )
     model = model.to(device)
     evaluator = Evaluator(model=model, seq_len=512, 
-                          device=model.device, n_samples=128)
+                          device=model.device, n_samples=None)
     _, testenc = get_loaders("wikitext2", model=model_path)
     ppl = evaluator.compute_ppl(testenc)
     print(f"PPL: {ppl:.4f}")

@@ -26,8 +26,8 @@ python llama.py --columns-per-group 256 \
                 --quantize-per-codebook \
                 --vq-scaling-blocksize 64 \
                 --zero-aware \
-                --output-dir ../../models/opt-125M-pr50-spp-vq \
-                ../../models/opt-125M-pr50-spp wikitext2
+                --output-dir ../../models/opt-125M-pr50-vq \
+                ../../models/opt-125M-pr50 wikitext2
 
 python llama.py --columns-per-group 256 \
                 --use-vq \
@@ -42,8 +42,8 @@ python llama.py --columns-per-group 256 \
                 --quantize-per-codebook \
                 --vq-scaling-blocksize 64 \
                 --zero-aware \
-                --output-dir ../../models/opt-125M-pr50-spp-vq2 \
-                ../../models/opt-125M-pr50-spp wikitext2
+                --output-dir ../../models/opt-125M-pr50-vq2 \
+                ../../models/opt-125M-pr50 wikitext2
 
 python llama.py --columns-per-group 256 \
                 --use-vq \

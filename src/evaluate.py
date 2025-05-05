@@ -34,9 +34,13 @@ def eval_zero_shot(model_path, task_list, num_fewshot=0):
         use_cache=None,
         cache_requests=True,
         limit=limit,
-        bootstrap_iters=1000,
+        bootstrap_iters=0,
     )
-    return results 
+    
+    new_results = {}
+    for k, v in results['results'].items():
+        new_results[k] = v['acc,none']
+    return new_results
 
 
 def main(model_path, device):
@@ -49,12 +53,14 @@ def main(model_path, device):
                           device=model.device, n_samples=None)
     _, testenc = get_loaders("wikitext2", model=model_path)
     ppl = evaluator.compute_ppl(testenc)
-    print(f"PPL: {ppl:.4f}")
 
     task_list = ["rte","winogrande","arc_easy","arc_challenge","openbookqa"]
     results = eval_zero_shot(model_path, task_list)
-    print(results)
 
+    print(f"PPL: {ppl:.4f}", end=" / ")
+    for k, v in results.items():
+        print(f"{k.upper()}: {v:.4f}", end=" / ")
+    print()
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()

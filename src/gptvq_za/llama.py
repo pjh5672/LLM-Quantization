@@ -150,6 +150,7 @@ def llama_sequential(model, dataloader, dev, args):
             quantize_per_codebook=args.quantize_per_codebook,
             quantize_during_kmeans=args.quantize_during_kmeans,
             n_subsample=args.kpp_n_subsample,
+            zero_aware=args.zero_aware
         )
     else:
         QClass = Quantizer
@@ -177,7 +178,7 @@ def llama_sequential(model, dataloader, dev, args):
 
             gptq = {}
             for name in subset:
-                gptq[name] = GPTQ(subset[name])
+                gptq[name] = GPTQ(subset[name], zero_aware=args.zero_aware)
                 gptq[name].quantizer = QClass()
                 gptq[name].quantizer.configure(args.wbits, perchannel=True, sym=args.sym, mse=False)
 
@@ -469,6 +470,7 @@ if __name__ == "__main__":
     parser.add_argument("--output-dir", type=str, default=None, help="Directory to save model in")
     parser.add_argument("--hessian-weighted-lookups", action="store_true", default=False)
     parser.add_argument("--only-init-kmeans", action="store_true", default=False)
+    parser.add_argument("--zero-aware", action="store_true", default=False)
 
     args = parser.parse_args()
 

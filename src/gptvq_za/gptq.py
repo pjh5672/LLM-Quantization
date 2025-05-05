@@ -55,7 +55,7 @@ def quad_loss_2(W, Q, G):
 
 class GPTQ:
 
-    def __init__(self, layer):
+    def __init__(self, layer, zero_aware=False):
         self.layer = layer
         self.dev = self.layer.weight.device
         W = layer.weight.data.clone()
@@ -67,6 +67,7 @@ class GPTQ:
         self.columns = W.shape[1]
         self.H = torch.zeros((self.columns, self.columns), device=self.dev)
         self.nsamples = 0
+        self.zero_aware = zero_aware
 
     def add_batch(self, inp, out):
         if DEBUG:
@@ -316,7 +317,7 @@ class GPTQ:
             W = W.t()
         W = W.float()
         MASK = W != 0
-        print('Weight :', (W == 0).sum())
+
         self.tick = time.time()
 
         if not self.quantizer.ready() and not use_vq:
@@ -451,9 +452,10 @@ class GPTQ:
                     q, assmt = vq_quantize(
                         w_scaled, self.quantizer, H_inv_diag=H_inv_diag
                     )  # R x 1 x D, R x 1
-                    q = torch.mul(q, s)  # de-scaling
-                    # q = torch.mul(q * m, s)  # de-scaling (w/ zero-aware)
-
+                    if self.zero_aware:
+                        q = torch.mul(q * m, s) # de-scaling (w/ zero-aware)
+                    else:
+                        q = torch.mul(q, s) # de-scaling
                     self.assignments[-1].append(assmt)
 
                     Q1[:, i : i + vq_dim] = q
@@ -492,9 +494,11 @@ class GPTQ:
             Q = Q.t()
 
         if include_m_step:
-            # Q = self.lut_m_step(Q, groupsize, self.quantizer, scale=S, svd_rank=svd_rank)
-            Q = self.lut_m_step_zero_aware(Q, groupsize, self.quantizer, scale=S, svd_rank=svd_rank)
-        print('Quantization :', (Q == 0).sum())
+            if self.zero_aware:
+                Q = self.lut_m_step_zero_aware(Q, groupsize, self.quantizer, scale=S, svd_rank=svd_rank)
+            else:
+                Q = self.lut_m_step(Q, groupsize, self.quantizer, scale=S, svd_rank=svd_rank)
+
         self.layer.weight.data = Q.reshape(self.layer.weight.shape).to(self.layer.weight.data.dtype)
         if DEBUG:
             print(torch.sum((self.layer(self.inp1) - self.out1) ** 2))

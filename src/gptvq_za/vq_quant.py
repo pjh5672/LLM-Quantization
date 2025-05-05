@@ -150,6 +150,7 @@ def kmeans_vq(
     H_inv_diag=None,
     codebook_bitwidth=None,
     per_codebook=False,
+    zero_aware=False,
 ):
     n_centroids = centroids.shape[1]
     for iter in range(iters):
@@ -160,8 +161,10 @@ def kmeans_vq(
 
         # M-step: gather all values for each centroid and compute means
         # Centroids is shape G x D x K; assignments is shape G x N
-        # kmeans_m_step_3(centroids, n_centroids, assignments, X, H_inv_diag=H_inv_diag)
-        kmeans_m_step_3_zero_aware(centroids, n_centroids, assignments, X, H_inv_diag=H_inv_diag)
+        if zero_aware:
+            kmeans_m_step_3_zero_aware(centroids, n_centroids, assignments, X, H_inv_diag=H_inv_diag)
+        else:
+            kmeans_m_step_3(centroids, n_centroids, assignments, X, H_inv_diag=H_inv_diag)
 
         if codebook_bitwidth is not None:
             quantize_centroids(centroids, codebook_bitwidth, per_codebook=per_codebook)
@@ -277,6 +280,7 @@ class VQQuantizer(nn.Module):
         vq_scaling_n_bits=4,
         vq_scaling_domain="log",
         quantize_during_kmeans=False,
+        zero_aware=False
     ):
         super().__init__()
         self.vq_dim = vq_dim
@@ -296,6 +300,7 @@ class VQQuantizer(nn.Module):
         self.vq_scaling_norm = vq_scaling_norm
         self.vq_scaling_n_bits = vq_scaling_n_bits
         self.vq_scaling_domain = vq_scaling_domain
+        self.zero_aware = zero_aware
 
     def get_groupsize(self, X, groupsize):
         if self.columns_per_group is not None:
@@ -353,8 +358,10 @@ class VQQuantizer(nn.Module):
         elif self.kmeans_init_method == "kpp":
             centroids = kpp_parallel_sampled(X, self.n_centroids)
         elif self.kmeans_init_method == "mahalanobis":
-            # centroids = mahalanobis_init(X, self.n_centroids)
-            centroids = mahalanobis_init_zero_aware(X, self.n_centroids)
+            if self.zero_aware:
+                centroids = mahalanobis_init_zero_aware(X, self.n_centroids)
+            else:
+                centroids = mahalanobis_init(X, self.n_centroids)
         else:
             raise ValueError(f"Unkown k-means init method: {self.kmeans_init_method}")
 
@@ -371,6 +378,7 @@ class VQQuantizer(nn.Module):
             iters=self.kmeans_iters,
             assignment_chunk_size=self.assignment_chunk_size,
             H_inv_diag=H_inv_diag,
+            zero_aware=self.zero_aware,
             **extra_args,
         )
 

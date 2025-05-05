@@ -451,8 +451,8 @@ class GPTQ:
                     q, assmt = vq_quantize(
                         w_scaled, self.quantizer, H_inv_diag=H_inv_diag
                     )  # R x 1 x D, R x 1
-                    # q = torch.mul(q, s)  # de-scaling
-                    q = torch.mul(q * m, s)  # de-scaling (w/ zero-aware)
+                    q = torch.mul(q, s)  # de-scaling
+                    # q = torch.mul(q * m, s)  # de-scaling (w/ zero-aware)
 
                     self.assignments[-1].append(assmt)
 

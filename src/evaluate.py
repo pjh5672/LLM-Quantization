@@ -23,7 +23,7 @@ def eval_zero_shot(model_path, task_list, num_fewshot=0):
     
     tm = TaskManager()
     task_names = pattern_match(task_list, tm.all_tasks)
-    limit = 300
+    limit = None
     batch_size = 8
     results = evaluator.simple_evaluate(
         model=models.huggingface.HFLM(pretrained=model_path, trust_remote_code=False),

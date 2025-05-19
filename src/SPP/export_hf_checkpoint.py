@@ -9,8 +9,19 @@ from transformers import AutoModelForCausalLM, AutoTokenizer, set_seed
 set_seed(42)
 # BASE_MODEL = "/path/to/wanda-llama-7b-2:4" # os.environ.get("BASE_MODEL", None)
 # ckpt_path = "/path/to/output/wanda-7b-2:4-spp"
-BASE_MODEL = "../../models/opt-125M-pr50"
-ckpt_path = "../../models/opt-125M-pr50-spp"
+# BASE_MODEL = "../../models/opt-125M-pr50"
+# ckpt_path = "../../models/opt-125M-pr50-spp"
+
+import argparse
+
+parser = argparse.ArgumentParser()
+parser.add_argument("--base_model", type=str)
+parser.add_argument("--ckpt_path", type=str)
+args = parser.parse_args()
+
+BASE_MODEL = args.base_model
+ckpt_path = args.ckpt_path
+
 ckpt_name = ckpt_path.split("/")[-1]
 assert (
     BASE_MODEL

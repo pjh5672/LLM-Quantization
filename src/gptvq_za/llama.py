@@ -46,6 +46,7 @@ def check_sparsity(model):
         print(f"layer {i} sparsity {float(sub_count)/sub_params:.6f}")
 
     model.config.use_cache = use_cache 
+    print(f"non-zeros: {total_params-count}, total: {total_params}")
     print(f"model sparsity {float(count)/total_params:.6f}")
 
 
@@ -477,6 +478,7 @@ if __name__ == "__main__":
     if not args.use_vq:
         args.wbits = int(args.wbits)
 
+    print(f"Target Model: {args.model}")
     model = get_llama(args.model, args.model_type)
     model.eval()
 

@@ -3,6 +3,8 @@ import argparse
 from loguru import logger
 from transformers import AutoModelForCausalLM
 
+from dataset import get_loaders
+from evals.evaluate import Evaluator
 
 
 def eval_zero_shot(model, tasks, batch_size, num_fewshot=0, fewshot_random_seed=1234):
@@ -53,15 +55,19 @@ def eval_zero_shot(model, tasks, batch_size, num_fewshot=0, fewshot_random_seed=
                 
 def main(model_path, device):
     model = AutoModelForCausalLM.from_pretrained(
-        model_path, attn_implementation="eager", 
-        torch_dtype=torch.float16, device_map="auto"
+        model_path, attn_implementation="eager", torch_dtype=torch.float16, device_map="auto"
     )
     model = model.to(device)
 
+    evaluator = Evaluator(model=model, seq_len=2048, device=model.device, n_samples=None)
+    _, testenc = get_loaders('wikitext2', model=model_path)
+    ppl = evaluator.compute_ppl(testenc)
+
     tasks = ['piqa', 'arc_challenge', 'arc_easy', 'boolq', 'hellaswag', 'winogrande']
-    results = eval_zero_shot(model=model, tasks=tasks, batch_size=16)
+    results = eval_zero_shot(model=model, tasks=tasks, batch_size=32)
 
     logger.info('-----' * 10)
+    logger.info(f"{'WIKITEXT2':16s} - PPL: {ppl:.4f}")
     for k, v in results['results'].items():
         logger.info(f"{k.upper():16s} - ACC: {v['acc,none']:.4f} (STD: {v['acc_stderr,none']:.4f})")
     logger.info('-----' * 10)
@@ -78,7 +84,7 @@ if __name__ == "__main__":
 
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     
-    logger.add("results.log", format="{time:YYYY-MM-DD} | {message}")
+    logger.add("../results.log", format="{time:YYYY-MM-DD} | {message}")
     logger.info(f"Evaluating...{args.model_path}")
     
     main(model_path=args.model_path, device=device)

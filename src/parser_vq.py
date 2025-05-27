@@ -1,5 +1,6 @@
 import torch
 import torch.nn as nn
+from tqdm import tqdm
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
 
@@ -53,7 +54,7 @@ def parser_vq_indices(model):
     
     vq_encodings = {}
     layers = model.model.decoder.layers
-    for i in range(len(layers)):
+    for i in tqdm(range(len(layers)), desc="Parsing VQ encodings..."):
         layer = layers[i]
         subset = find_layers(layer)
 
